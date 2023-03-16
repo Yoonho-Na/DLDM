@@ -1,12 +1,15 @@
 # Disentangled Latent Diffusion Model (DLDM)
 This repo contains Pytorch implemented model definitions, pre-trained weights and training/sampling code for DLDMs.
 
+### Installation guide
+1. git clone this repo
+2. Install the pkgs with `conda env create -f environment.yaml` and activate envorionment `conda activate dldm`
+
 ### Download pre-trained model
 We provide pretrained weights.
 https://drive.google.com/file/d/1JriniwO28vw_eRtN08gvHuc_EM6PlLDc/view?usp=share_link
 
 ### Custom dataset
-1. install the repo with `conda env create -f environment.yaml`, `conda activate dldm` and `pip install -e .`
 1. put your .jpg, .npy, .png, ... files in a folder `custom_folder`
 2. create 2 text files a `xx_train.txt` and `xx_valid.txt` that point to the files in your training and test set respectively<br/>
 `find $(pwd)/custom_folder/train -name "*.npy" > xx_train.txt`<br/>
@@ -37,8 +40,6 @@ ${pwd}/custom_folder/valid/
 3. adapt `configs/custom_DAE.yaml` to point to these 2 files
 4. run `python main.py --base configs/custom_DAE.yaml -t True --gpus 0,1` to
    train on two GPUs. Use `--gpus 0,` (with a trailing comma) to train on a single GPU.
-   
-   `ImportError: libcudnn.so.8: cannot open shared object file: No such fileor directory'
    
 ## Summary
 
