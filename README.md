@@ -1,7 +1,7 @@
 # Disentangled Latent Diffusion Model (DLDM)
 This repo contains Pytorch implemented model definitions, pre-trained weights and training/sampling code for DLDMs.
 
-### Pre-trained model
+### Download pre-trained model
 We provide pretrained weights.
 
 ### Custom dataset
