@@ -3,6 +3,7 @@ This repo contains Pytorch implemented model definitions, pre-trained weights an
 
 ### Download pre-trained model
 We provide pretrained weights.
+https://drive.google.com/file/d/1JriniwO28vw_eRtN08gvHuc_EM6PlLDc/view?usp=share_link
 
 ### Custom dataset
 1. install the repo with `conda env create -f environment.yaml`, `conda activate dldm` and `pip install -e .`
