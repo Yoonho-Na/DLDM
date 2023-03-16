@@ -3,35 +3,39 @@ This repo contains Pytorch implemented model definitions, pre-trained weights an
 
 ### Installation guide
 1. git clone this repo
-2. Install the pkgs with `conda env create -f environment.yaml` and activate envorionment `conda activate dldm`
-
+2. Install the pkgs and activate envorionment
+```
+$ conda env create -f environment.yaml
+$ conda activate dldm
+```
 ### Download pre-trained model
 We provide pretrained weights.
-https://drive.google.com/file/d/1JriniwO28vw_eRtN08gvHuc_EM6PlLDc/view?usp=share_link
-
+```
+$ python scripts/pretrained_dldm.py
+```
 ### Custom dataset
-1. put your .jpg, .npy, .png, ... files in a folder `custom_folder`
+1. put your files (.jpg, .npy, .png, ...) in a folder `custom_folder`
 2. create 2 text files a `xx_train.txt` and `xx_valid.txt` that point to the files in your training and test set respectively<br/>
 `find $(pwd)/custom_folder/train -name "*.npy" > xx_train.txt`<br/>
 `find $(pwd)/custom_folder/valid -name "*.npy" > xx_valid.txt`
 ```
 ${pwd}/custom_folder/train/
-├── T1
+├── class1
 │   ├── filename1.npy
 │   ├── filename2.npy
 │   ├── ...
-├── T2
+├── class2
 │   ├── filename1.npy
 │   ├── filename2.npy
 │   ├── ...
 ├── ...
 
 ${pwd}/custom_folder/valid/
-├── T1
+├── class1
 │   ├── filename1.npy
 │   ├── filename2.npy
 │   ├── ...
-├── T2
+├── class2
 │   ├── filename1.npy
 │   ├── filename2.npy
 │   ├── ...
