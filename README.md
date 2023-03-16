@@ -1,4 +1,4 @@
-# DLDM
+# Disentangled Latent Diffusion Model (DLDM)
 This repo contains Pytorch implemented model definitions, pre-trained weights and training/sampling code for disentangled latent diffusion models.
 
 ### Pretrained model
@@ -37,7 +37,7 @@ ${pwd}/custom_folder/valid/
 4. run `python main.py --base configs/custom_DAE.yaml -t True --gpus 0,1` to
    train on two GPUs. Use `--gpus 0,` (with a trailing comma) to train on a single GPU.
    
-## Disentangled Latent Diffusion Model (DLDM)
+## Summary
 
 ### DLDM component
 * Disentangled AutoEncoder (DAE)
