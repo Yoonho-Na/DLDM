@@ -37,6 +37,8 @@ ${pwd}/custom_folder/valid/
 4. run `python main.py --base configs/custom_DAE.yaml -t True --gpus 0,1` to
    train on two GPUs. Use `--gpus 0,` (with a trailing comma) to train on a single GPU.
    
+   `ImportError: libcudnn.so.8: cannot open shared object file: No such fileor directory'
+   
 ## Summary
 
 ### DLDM component
