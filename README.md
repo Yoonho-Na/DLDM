@@ -60,10 +60,12 @@ ${pwd}/custom_folder/valid/
 </p>
 
 ## Disentanglement study
+
 ### Mixture of structure and style latents
 <p align="center">
  <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/main/figures/mix_structure_style_bg.png?raw=true">
 </p>
+
 ### Walking on the style latents
 <p align="center">
  <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/main/figures/style_interpolation_bg.png?raw=true">
