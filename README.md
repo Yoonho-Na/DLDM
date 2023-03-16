@@ -5,7 +5,7 @@ This repo contains Pytorch implemented model definitions, pre-trained weights an
 We provide pretrained weights.
 
 ### Custom dataset
-1. install the repo with `conda env create -f environment.yaml`, `conda activate taming` and `pip install -e .`
+1. install the repo with `conda env create -f environment.yaml`, `conda activate dldm` and `pip install -e .`
 1. put your .jpg, .npy, .png, ... files in a folder `custom_folder`
 2. create 2 text files a `xx_train.txt` and `xx_valid.txt` that point to the files in your training and test set respectively<br/>
 `find $(pwd)/custom_folder/train -name "*.npy" > xx_train.txt`<br/>
