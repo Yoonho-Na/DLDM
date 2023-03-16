@@ -1,6 +1,8 @@
 # DLDM
 This repo contains Pytorch implemented model definitions, pre-trained weights and training/sampling code for disentangled latent diffusion models.
+
 ### Pretrained model
+We provide pretrained weights.
 
 ### Custom dataset
 1. install the repo with `conda env create -f environment.yaml`, `conda activate taming` and `pip install -e .`
