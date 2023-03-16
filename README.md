@@ -6,6 +6,7 @@ This repo contains Pytorch implemented model definitions, pre-trained weights an
 2. Install the pkgs and activate envorionment
 ```
 $ git clone git@github.com:Yoonho-Na/DLDM.git
+$ cd DLDM
 $ conda env create -f environment.yaml
 $ conda activate dldm
 ```
