@@ -1,0 +1,52 @@
+model:
+  base_learning_rate: 4.5e-6
+  target: ldm.models.autoencoder.AutoencoderKL
+  params:
+    monitor: "val/rec_loss"
+    embed_dim: 12
+    # ckpt_path: "/home/yhn/Meta_synthesis/Project/models/DLDM/pretrained_DLDM/DLDM_pretrained/DAE_epoch=000063.ckpt"
+    lossconfig:
+      target: ldm.modules.losses.LPIPSWithDiscriminator
+      params:
+        disc_start: 50001
+        kl_weight: 1.0e-06
+        disc_weight: 0.5
+        disc_in_channels: 3
+    ddconfig:
+      double_z: True
+      z_channels: 12
+      resolution: 256
+      in_channels: 5
+      out_ch: 1
+      ch: 128
+      ch_mult: [ 1,2,4 ]  # num_down = len(ch_mult)-1
+      num_res_blocks: 2
+      attn_resolutions: [ ]
+      dropout: 0.0
+
+data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 6
+    wrap: True
+    train:
+      target: ldm.data.meta.DAEMetaMultiTrain
+      params:
+        size: 256
+    validation:
+      target: ldm.data.meta.DAEMetaMultiValid
+      params:
+        size: 256
+
+lightning:
+  callbacks:
+    image_logger:
+      target: main.ImageLogger
+      params:
+        batch_frequency: 500
+        max_images: 5
+        increase_log_steps: False
+
+  trainer:
+    benchmark: True
+    accumulate_grad_batches: 2
