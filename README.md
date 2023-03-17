@@ -52,7 +52,7 @@ ${pwd}/custom_folder/valid/
    train on two GPUs. Use `--gpus 0,` (with a trailing comma) to train on a single GPU.
    
 ## Summary
-### DLDM component
+### Components in DLDM
 * Disentangled AutoEncoder (DAE)
 * Denoising Network
 * Embedding Network
