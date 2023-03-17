@@ -2,8 +2,8 @@
 This repo contains Pytorch implemented model definitions, pre-trained weights and training/sampling code for DLDMs.
 
 ### TODO
-* JAX implementaion
 * preprocessing code
+* JAX implementaion
 
 ### Installation guide
 1. git clone this repo
