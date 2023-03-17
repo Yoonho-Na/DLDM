@@ -3,6 +3,7 @@ This repo contains Pytorch implemented model definitions, pre-trained weights an
 
 ### TODO
 * preprocessing code
+* set .gitignore
 * JAX implementaion
 
 ### Installation guide
