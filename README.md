@@ -1,11 +1,6 @@
 # Disentangled Latent Diffusion Model (DLDM)
 This repo contains Pytorch implemented model definitions, pre-trained weights and training/sampling code for DLDMs.
 
-### TODO
-* preprocessing code
-* set .gitignore
-* JAX implementaion
-
 ### Installation guide
 1. git clone this repo
 2. Install the pkgs and activate envorionment
