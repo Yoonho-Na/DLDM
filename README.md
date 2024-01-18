@@ -16,7 +16,9 @@ We provide pretrained weights.
 $ python scripts/pretrained_dldm.py
 ```
 ### Sampling
-
+```
+$ python sampling.py
+```
 ### Custom dataset
 1. put your files (.jpg, .npy, .png, ...) in a folder `custom_folder`
 2. create 2 text files a `xx_train.txt` and `xx_valid.txt` that point to the files in your training and test set respectively<br/>
