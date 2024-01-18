@@ -308,16 +308,6 @@ class ImageLogger(Callback):
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
 
-    # @rank_zero_only
-    # def _testtube(self, pl_module, images, batch_idx, split):
-    #     for k in images:
-    #         grid = torchvision.utils.make_grid(images[k])
-    #         grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
-    #         tag = f"{split}/{k}"
-    #         pl_module.logger.experiment.add_image(
-    #             tag, grid,
-    #             global_step=pl_module.global_step)
-            
     @rank_zero_only
     def _wandb(self, pl_module, images, batch_idx, split):
         grids = dict()
@@ -328,17 +318,6 @@ class ImageLogger(Callback):
             grids[f"{split}/{k}"] = wandb.Image(grid)
         pl_module.logger.experiment.log(grids)
             
-    # @rank_zero_only
-    # def _wandb(self, pl_module, images_, batch_idx, split):
-    #     for k in images_:
-    #         tag = f"{split}/{k}"
-    #         grid = torchvision.utils.make_grid(images_[k])
-    #         grid = (grid + 1.0) / 2.0  # -1,1 -> 0,1; c,h,w
-    #         print('grid.shape:', grid.shape)
-    #         img = wandb.Image(grid)
-    #         print(img)
-    #         pl_module.logger.experiment.log({tag:grid})
-
     @rank_zero_only
     def log_local(self, save_dir, split, images,
                   global_step, current_epoch, batch_idx):
@@ -575,22 +554,16 @@ if __name__ == "__main__":
                     "id": nowname,
                 }
             },
-            # "testtube": {
-            #     "target": "pytorch_lightning.loggers.TestTubeLogger",
-            #     "params": {
-            #         "name": "testtube",
-            #         "save_dir": logdir,
-            #     }
-            # },
         }
+        ###########################################################################        
         default_logger_cfg = default_logger_cfgs["wandb"]
-        # default_logger_cfg = default_logger_cfgs["testtube"]
         if "logger" in lightning_config:
             logger_cfg = lightning_config.logger
         else:
             logger_cfg = OmegaConf.create()
         logger_cfg = OmegaConf.merge(default_logger_cfg, logger_cfg)
         trainer_kwargs["logger"] = instantiate_from_config(logger_cfg)
+        ###########################################################################
 
         # modelcheckpoint - use TrainResult/EvalResult(checkpoint_on=metric) to
         # specify which metric is used to determine best models
@@ -720,7 +693,6 @@ if __name__ == "__main__":
             print("++++ NOT USING LR SCALING ++++")
             print(f"Setting learning rate to {model.learning_rate:.2e}")
 
-
         # allow checkpointing via USR1
         def melk(*args, **kwargs):
             # run all checkpoint hooks
@@ -729,12 +701,10 @@ if __name__ == "__main__":
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 trainer.save_checkpoint(ckpt_path)
 
-
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:
                 import pudb;
                 pudb.set_trace()
-
 
         import signal
 
