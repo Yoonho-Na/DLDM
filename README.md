@@ -15,6 +15,8 @@ We provide pretrained weights.
 ```
 $ python scripts/pretrained_dldm.py
 ```
+### Sampling
+
 ### Custom dataset
 1. put your files (.jpg, .npy, .png, ...) in a folder `custom_folder`
 2. create 2 text files a `xx_train.txt` and `xx_valid.txt` that point to the files in your training and test set respectively<br/>
@@ -46,24 +48,3 @@ ${pwd}/custom_folder/valid/
 3. adapt `configs/custom_DAE.yaml` to point to these 2 files
 4. run `python main.py --base configs/custom_DAE.yaml -t True --gpus 0,1` to
    train on two GPUs. Use `--gpus 0,` (with a trailing comma) to train on a single GPU.
-   
-## Summary
-### Components in DLDM
-* Disentangled AutoEncoder (DAE)
-* Denoising Network
-* Embedding Network
-
-## Training process
-<p align="center">
- <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/master/figures/main_figure_bg.png?raw=true">
-</p>
-
-## Multi-modal image generation
-<p align="center">
- <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/master/figures/multi-modal_generation_bg.png?raw=true">
-</p>
-
-## Generation of brain metastasis MRIs
-<p align="center">
- <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/master/figures/original%20vs%20DLDM%20vs%20StyleGAN2_bg.png?raw=true">
-</p>
