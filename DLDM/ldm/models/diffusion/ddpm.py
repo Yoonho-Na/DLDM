@@ -21,7 +21,7 @@ from pytorch_lightning.utilities.distributed import rank_zero_only
 from ldm.util import log_txt_as_img, exists, default, ismap, isimage, mean_flat, count_params, instantiate_from_config
 from ldm.modules.ema import LitEma
 from ldm.modules.distributions.distributions import normal_kl, DiagonalGaussianDistribution
-from ldm.models.autoencoder import VQModelInterface, IdentityFirstStage, AutoencoderKL
+from ldm.models.autoencoder import VQModelInterface, IdentityFirstStage, AutoencoderKL, DAE
 from ldm.modules.diffusionmodules.util import make_beta_schedule, extract_into_tensor, noise_like
 from ldm.models.diffusion.ddim import DDIMSampler
 
@@ -342,7 +342,7 @@ class DDPM(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss, loss_dict = self.shared_step(batch)
-        print('loss_dict:', loss_dict)
+        # print('loss_dict:', loss_dict)
 
         self.log_dict(loss_dict, prog_bar=True,
                       logger=True, on_step=True, on_epoch=True)
@@ -421,6 +421,14 @@ class DDPM(pl.LightningModule):
             params = params + [self.logvar]
         opt = torch.optim.AdamW(params, lr=lr)
         return opt
+
+
+
+
+
+
+
+
 
 
 class LatentDiffusion(DDPM):
@@ -544,7 +552,7 @@ class LatentDiffusion(DDPM):
 
     def get_first_stage_encoding(self, encoder_posterior):
         if isinstance(encoder_posterior, DiagonalGaussianDistribution):
-            z = encoder_posterior.sample()
+            z = encoder_posterior.sample() # b, 3, 64, 64
         elif isinstance(encoder_posterior, torch.Tensor):
             z = encoder_posterior
         else:
@@ -671,37 +679,71 @@ class LatentDiffusion(DDPM):
             raise NotImplementedError
 
         return fold, unfold, normalization, weighting
+    
+    def z_select(self, z, label, struct_dim=2, style_dim=1):
+        # idx -> 0, 1, 2, 3, 4 = T2, FLAIR, WB, BB, MASK
+        # ['glio_T2', 'glio_FLAIR', 'glio_WB', 'glio_BB', 'glio_mask', 'meta_T2', 'meta_FLAIR', 'meta_WB', 'meta_BB', 'meta_mask']
+        b, c, h, w = z.shape # b, 7, 64, 64
+        for i in range(b):
+            if label[i] >= 5:
+                l = label[i] - 5
+            else:
+                l = label[i]
+            # print(label[i], l)
+            if i == 0:
+                structure = z[i, :struct_dim, :, :].unsqueeze(0) # 1, 2, 64, 64
+                style = z[i, struct_dim+style_dim*l:struct_dim+style_dim*(l+1), :, :].unsqueeze(0) # 1, 1, 64, 64 select one random style vector
+                reshaped_z_batch = torch.cat([structure, style], dim=1) # 1, 3, 64, 64 structure and conditioned class target single style vector
+            else:
+                structure = z[i, :struct_dim, :, :].unsqueeze(0) # 1, 2, 64, 64
+                style = z[i, struct_dim+style_dim*l:struct_dim+style_dim*(l+1), :, :].unsqueeze(0) # 1, 1, 64, 64 select one random style vector
+                single_data = torch.cat([structure, style], dim=1)
+                reshaped_z_batch = torch.cat([reshaped_z_batch, single_data], dim=0)  # b, 3, 64, 64
+        z = reshaped_z_batch # b, 3, 64, 64
+        return z
+    
+    def x_select(self, x, label):
+        # x Tensor manipulation : b, 5, 256, 256 -> b, 1, 256, 256 (only show target sequence)
+        b, c, h, w = x.shape
+        for i in range(b):
+            if label[i] >= 5:
+                l = label[i] - 5
+            else:
+                l = label[i]
+            if i == 0:
+                reshaped_x_batch = x[i, l, :, :].unsqueeze(0).unsqueeze(1) # 1, 1, 256, 256
+            else:
+                single_data = x[i, l, :, :].unsqueeze(0).unsqueeze(1) # 1, 1, 256, 256
+                reshaped_x_batch = torch.cat([reshaped_x_batch, single_data], dim=0)
+        x = reshaped_x_batch # b, 1, 256, 256
+        return x
 
     @torch.no_grad()
     def get_input(self, batch, k, return_first_stage_outputs=False, force_c_encode=False,
                   cond_key=None, return_original_cond=False, bs=None):
         x = super().get_input(batch, k) # b, 5, 256, 256
         target_label = super().get_input(batch, 'class_label') # list of random order 0, 1, 2, 3, 4
-        # print('target_label:', target_label)
 
         if bs is not None:
             x = x[:bs]
         x = x.to(self.device)
-        encoder_posterior = self.encode_first_stage(x)
-        z = self.get_first_stage_encoding(encoder_posterior).detach() # b, 12, 64, 64
-        # print('z.shape:', z.shape)
+        encoder_posterior = self.encode_first_stage(x) # b, 14, 64, 64 -> (2+5*1)*2
+        z = self.get_first_stage_encoding(encoder_posterior).detach() # b, 7, 64, 64 -> 2 for structure and 5 for every style
+        z = self.z_select(z, target_label)
 
-        # z Tensor manipulation : b, 12, 64, 64 -> b, 4, 64, 64 (2 for structure and 2 for single style channel)
-        b, c, h, w = z.shape # b, 12, 64, 64
-        for i in range(b):
-            if i == 0:
-                structure = z[i, :2, :, :].unsqueeze(0) # 1, 2, 64, 64
-                style = z[i, target_label[i]*2+2:target_label[i]*2+4, :, :].unsqueeze(0) # 1, 2, 64, 64 select one random style vector
-                # print('structure.shape:', structure.shape)
-                # print('style.shape:', style.shape)
-                reshaped_z_batch = torch.cat([structure, style], dim=1) # 1, 4, 64, 64 structure and conditioned class target single style vector
-            else:
-                structure = z[i, :2, :, :].unsqueeze(0) # 1, 2, 64, 64
-                style = z[i, target_label[i]*2+2:target_label[i]*2+4, :, :].unsqueeze(0) # 1, 2, 64, 64
-                single_data = torch.cat([structure, style], dim=1)
-                reshaped_z_batch = torch.cat([reshaped_z_batch, single_data], dim=0)  # b, 4, 64, 64
-
-        z = reshaped_z_batch # b, 4, 64, 64
+        # # z Tensor manipulation : b, 7, 64, 64 -> b, 3, 64, 64 (2 for structure and 1 for single style channel)
+        # b, c, h, w = z.shape # b, 7, 64, 64
+        # for i in range(b):
+        #     if i == 0:
+        #         structure = z[i, :2, :, :].unsqueeze(0) # 1, 2, 64, 64
+        #         style = z[i, target_label[i]*2+2:target_label[i]*2+4, :, :].unsqueeze(0) # 1, 1, 64, 64 select one random style vector
+        #         reshaped_z_batch = torch.cat([structure, style], dim=1) # 1, 3, 64, 64 structure and conditioned class target single style vector
+        #     else:
+        #         structure = z[i, :2, :, :].unsqueeze(0) # 1, 2, 64, 64
+        #         style = z[i, target_label[i]*2+2:target_label[i]*2+4, :, :].unsqueeze(0) # 1, 1, 64, 64
+        #         single_data = torch.cat([structure, style], dim=1)
+        #         reshaped_z_batch = torch.cat([reshaped_z_batch, single_data], dim=0)  # b, 3, 64, 64
+        # z = reshaped_z_batch # b, 3, 64, 64
         # print('reshaped_z_batch.shape:', reshaped_z_batch.shape)
 
         if self.model.conditioning_key is not None:
@@ -720,6 +762,7 @@ class LatentDiffusion(DDPM):
                 if isinstance(xc, dict) or isinstance(xc, list):
                     # import pudb; pudb.set_trace()
                     c = self.get_learned_conditioning(xc) # b, 1, 128
+                    
                     # print('xc:', xc)  labels in dict
                 else:
                     c = self.get_learned_conditioning(xc.to(self.device))
@@ -741,15 +784,17 @@ class LatentDiffusion(DDPM):
                 c = {'pos_x': pos_x, 'pos_y': pos_y}
         out = [z, c]
         if return_first_stage_outputs:
-            # x Tensor manipulation : b, 5, 256, 256 -> b, 1, 256, 256 (only show target sequence)
-            b, c, h, w = x.shape
-            for i in range(b):
-                if i == 0:
-                    reshaped_x_batch = x[i, target_label[i], :, :].unsqueeze(0).unsqueeze(1) # 1, 1, 256, 256
-                else:
-                    single_data = x[i, target_label[i], :, :].unsqueeze(0).unsqueeze(1) # 1, 1, 256, 256
-                    reshaped_x_batch = torch.cat([reshaped_x_batch, single_data], dim=0)
-            x = reshaped_x_batch # b, 1, 256, 256
+            x = self.x_select(x, target_label)
+            # # x Tensor manipulation : b, 5, 256, 256 -> b, 1, 256, 256 (only show target sequence)
+            # b, c, h, w = x.shape
+            # for i in range(b):
+            #     if i == 0:
+            #         reshaped_x_batch = x[i, target_label[i], :, :].unsqueeze(0).unsqueeze(1) # 1, 1, 256, 256
+            #     else:
+            #         single_data = x[i, target_label[i], :, :].unsqueeze(0).unsqueeze(1) # 1, 1, 256, 256
+            #         reshaped_x_batch = torch.cat([reshaped_x_batch, single_data], dim=0)
+            # x = reshaped_x_batch # b, 1, 256, 256
+
             xrec = self.decode_first_stage(z)
             out.extend([x, xrec])
         if return_original_cond:
@@ -760,6 +805,7 @@ class LatentDiffusion(DDPM):
     def get_input_with_single_styles(self, batch, k, class_idx, return_first_stage_outputs=False, force_c_encode=False,
                   cond_key=None, return_original_cond=False, bs=None):
         x = super().get_input(batch, k) # 1, 5, 256, 256
+        b, _, _, _ = x.shape
 
         if bs is not None:
             x = x[:bs]
@@ -841,14 +887,19 @@ class LatentDiffusion(DDPM):
                 if isinstance(self.first_stage_model, VQModelInterface):
                     return self.first_stage_model.decode(z, force_not_quantize=predict_cids or force_not_quantize)
                 else:
+                    # print('decode_first_stage1 z shape:', z.shape)
                     return self.first_stage_model.decode(z)
 
         else:
             if isinstance(self.first_stage_model, VQModelInterface):
                 return self.first_stage_model.decode(z, force_not_quantize=predict_cids or force_not_quantize)
             else:
-                # print('z.shape right before decode function:', z.shape)
+                # print('decode_first_stage2 z shape:', z.shape) ######################
+                # print('z.shape right before decode function:', z.shape) # 8, 6, 64, 64
                 return self.first_stage_model.decode(z)
+            
+    def mask_decode_first_stage(self, z):
+        return self.first_stage_model.mask_decode(z)
 
     # same as above but without decorator
     def differentiable_decode_first_stage(self, z, predict_cids=False, force_not_quantize=False):
@@ -949,6 +1000,26 @@ class LatentDiffusion(DDPM):
                 return self.first_stage_model.encode(x)
         else:
             return self.first_stage_model.encode(x)
+        
+    # @torch.no_grad()
+    # def moments_selector_first_stage(self, moments, target_label, struct_dim=2, style_dim=1, style_n=4, double_z=True):
+    #     # take full moment and select structure and single style moment
+    #     # idx -> 0, 1, 2, 3, 4 = T2, FLAIR, WB, BB, MASK
+    #     if double_z is True:
+    #         a = 2
+    #     else:
+    #         a = 1
+    #     b, _, _, _ = moments.shape
+    #     struct_moments = moments[:, :a*struct_dim, :, :] # b, 4, 64, 64
+        
+    #     for i in range(b):
+    #         if i == 0:
+    #             style_moments = moments[i, target_label[i]*a*style_dim+a*struct_dim:target_label[i]*a*style_dim+a*(struct_dim+style_dim), :, :].unsqueeze(0) # 1, 2, 64, 64 select one random style vector
+    #         else:
+    #             style_moments = torch.cat([style_moments, moments[i, target_label[i]*a*style_dim+a*struct_dim:target_label[i]*a*style_dim+a*(struct_dim+style_dim), :, :].unsqueeze(0)], dim=0) # 1, 2, 64, 64 select one random style vector
+    #     merged_moments = torch.cat([struct_moments, style_moments], dim=1) # b, 6, 64, 64
+    #     posterior = DiagonalGaussianDistribution(merged_moments)
+    #     return posterior
 
     def shared_step(self, batch, **kwargs):
         x, c = self.get_input(batch, self.first_stage_key)
@@ -1462,6 +1533,9 @@ class LatentDiffusion(DDPM):
             sample_2 = self.decode_first_stage(samples_s[2].unsqueeze(0))
             sample_3 = self.decode_first_stage(samples_s[3].unsqueeze(0))
             sample_4 = self.decode_first_stage(samples_s[4].unsqueeze(0))
+
+            sample_4 = self.mask_decode_first_stage(sample_4) #########################################
+
             samples_s = torch.cat([sample_0, sample_1, sample_2, sample_3, sample_4], dim=3)
             # print('samples_s.shape:', samples_s.shape) # 1, 1, 256, 1280
             
@@ -1471,7 +1545,7 @@ class LatentDiffusion(DDPM):
                 denoise_grid = self._get_denoise_row_from_list(z_denoise_row)
                 log["denoise_row"] = denoise_grid
 
-            if quantize_denoised and not isinstance(self.first_stage_model, AutoencoderKL) and not isinstance(
+            if quantize_denoised and not isinstance(self.first_stage_model, DAE) and not isinstance(
                     self.first_stage_model, IdentityFirstStage):
                 # also display when quantizing x0 while sampling
                 with self.ema_scope("Plotting Quantized Denoised"):
