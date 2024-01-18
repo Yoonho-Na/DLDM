@@ -67,15 +67,3 @@ ${pwd}/custom_folder/valid/
 <p align="center">
  <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/master/figures/original%20vs%20DLDM%20vs%20StyleGAN2_bg.png?raw=true">
 </p>
-
-## Disentanglement study
-
-### Mixture of structure and style latents
-<p align="center">
- <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/master/figures/mix_structure_style_bg.png?raw=true">
-</p>
-
-### Walking on the style latents
-<p align="center">
- <img width="900" src="https://github.com/Yoonho-Na/DLDM/blob/master/figures/style_interpolation_bg.png?raw=true">
-</p>
