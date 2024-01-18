@@ -47,11 +47,20 @@ class MetaBase(Dataset):
         }
 
         if self.multi:
-            self.modes = ['T1', 'T2', 'FLAIR', 'WB', 'BB']
+            self.modes = ['glio_T2', 'glio_FLAIR', 'glio_WB', 'glio_BB', 'glio_mask', 'meta_T2', 'meta_FLAIR', 'meta_WB', 'meta_BB', 'meta_mask']
+
             if self.model == 'ldm':
                 self.label_to_idx = dict((mode, i) for i, mode in enumerate(self.modes))
                 self.idx_to_label = {v:k for k, v in self.label_to_idx.items()}
-                self.labels["class_label"] = np.random.randint(0, 5, len(self.image_paths)) # 0, 1, 2, 3, 4 random sample
+                glio_meta_select = []
+                for paths in self.labels["file_path_"]:
+                    if len(os.path.basename(paths).split('_'))==3: # severance
+                        glio_meta_select.append(np.random.randint(5, 10))
+                    else:
+                        glio_meta_select.append(np.random.randint(0, 5))
+
+                self.labels["class_label"] = np.array(glio_meta_select) # 0 ~ 10 random sample: 10종류 도메인 중 생성할 영상 랜덤 픽
+                # self.labels["class_label"] = np.random.randint(0, 5, len(self.image_paths)) # 0 ~ 5 random sample: 5종류 도메인 중 생성할 영상 랜덤 픽
                 self.labels["human_label"] = np.array([self.idx_to_label[x] for x in self.labels["class_label"]])
 
         self.size = size
@@ -69,33 +78,53 @@ class MetaBase(Dataset):
         
         example = dict((k, self.labels[k][i]) for k in self.labels)
         image = np.load(example["file_path_"])
+        mask = image[4, :, :]
+        mask = np.where(mask > 0.875, 1, mask) # necro
+        mask = np.where((mask > 0.625) & (mask < 0.875), 0.75, mask) # enhance
+        mask = np.where((mask > 0.375) & (mask < 0.625), 0.5, mask) # edema
+        mask = np.where((mask > 0.125) & (mask < 0.375), 0.25, mask) # meta
+        mask = np.where(mask < 0.125, 0, mask) # background
+        image[4, :, :] = mask
+        
+
         if self.multi:
             image = image.transpose((1, 2, 0)) # only for multi sequences
+
         example["image"] = (image/0.5 - 1.0).astype(np.float32)
-        # example["target_index"] = random.randint(1, 5)
         return example
 
-class DAEMetaMultiTrain(MetaBase):
-    def __init__(self, **kwargs):
-        super().__init__(txt_file="/home/yhn/Meta_synthesis/Project/models/DLDM/data/metastasis/meta_multi_without_mask_train.txt", 
-                         data_root="/home/yhn/Meta_synthesis/data/Severance_multi_without_label/train", 
-                         model="dae", multi=True, **kwargs)
+# class Trainset(MetaBase):
+#     def __init__(self, **kwargs):
+#         super().__init__(txt_file="/home/yhn/v3_DLDM_multi-institute_single_mask/DLDM/data/bb_imputation_train.txt", 
+#                          data_root="/home/yhn/Meta_synthesis/data/bb_imputation/train", 
+#                          model="dae", multi=True, **kwargs)
 
-class DAEMetaMultiValid(MetaBase):
-    def __init__(self, **kwargs):
-        super().__init__(txt_file="/home/yhn/Meta_synthesis/Project/models/DLDM/data/metastasis/meta_multi_without_mask_valid.txt", 
-                         data_root="/home/yhn/Meta_synthesis/data/Severance_multi_without_label/valid", 
-                         model="dae", multi=True, **kwargs)
+# class Validset(MetaBase):
+#     def __init__(self, **kwargs):
+#         super().__init__(txt_file="/home/yhn/v3_DLDM_multi-institute_single_mask/DLDM/data/bb_imputation_valid.txt", 
+#                          data_root="/home/yhn/Meta_synthesis/data/bb_imputation/valid", 
+#                          model="dae", multi=True, **kwargs)
 
+# class Trainset(MetaBase):
+#     def __init__(self, **kwargs):
+#         super().__init__(txt_file="/home/yhn/v3_DLDM_multi-institute_single_mask/DLDM/data/bb_imputation_train.txt", 
+#                          data_root="/home/yhn/Meta_synthesis/data/bb_imputation/train", 
+#                          model="ldm", multi=True, **kwargs)
 
-class LDMMetaMultiTrain(MetaBase):
+# class Validset(MetaBase):
+#     def __init__(self, **kwargs):
+#         super().__init__(txt_file="/home/yhn/v3_DLDM_multi-institute_single_mask/DLDM/data/bb_imputation_valid.txt", 
+#                          data_root="/home/yhn/Meta_synthesis/data/bb_imputation/valid", 
+#                          model="ldm", multi=True, **kwargs)
+
+class Trainset(MetaBase):
     def __init__(self, **kwargs):
-        super().__init__(txt_file="/home/yhn/Meta_synthesis/Project/models/DLDM/data/metastasis/meta_multi_without_mask_train.txt", 
-                         data_root="/home/yhn/Meta_synthesis/data/Severance_multi_without_label/train", 
+        super().__init__(txt_file="/your/path/to/train_textfile.txt", 
+                         data_root="/your/path/to/dataset/train", 
                          model="ldm", multi=True, **kwargs)
 
-class LDMMetaMultiValid(MetaBase):
+class Validset(MetaBase):
     def __init__(self, **kwargs):
-        super().__init__(txt_file="/home/yhn/Meta_synthesis/Project/models/DLDM/data/metastasis/meta_multi_without_mask_valid.txt", 
-                         data_root="/home/yhn/Meta_synthesis/data/Severance_multi_without_label/valid", 
+        super().__init__(txt_file="/your/path/to/valid_textfile.txt", 
+                         data_root="/your/path/to/dataset/valid", 
                          model="ldm", multi=True, **kwargs)
