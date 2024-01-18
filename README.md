@@ -17,7 +17,7 @@ $ python scripts/pretrained_dldm.py
 ```
 ### Sampling
 ```
-$ python sampling.py
+$ python sample.py
 ```
 ### Custom dataset
 1. put your files (.jpg, .npy, .png, ...) in a folder `custom_folder`
