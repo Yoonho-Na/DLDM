@@ -2,6 +2,8 @@ from abc import abstractmethod
 from functools import partial
 import math
 from typing import Iterable
+import time
+from torchsummary import summary
 
 import numpy as np
 import torch as th
@@ -960,3 +962,10 @@ class EncoderUNetModel(nn.Module):
             h = h.type(x.dtype)
             return self.out(h)
 
+if __name__ == '__main__':
+    #Configurations according to the Xenopus kidney dataset
+    # model = UNet3D(in_channels=2, out_channels=1, level_channels=[16, 32, 64], bottleneck_channel=128)
+    model = EncoderUNetModel(image_size=64, in_channels=3, model_channels=192, out_channels=3, num_res_blocks=2, attention_resolutions=[1, 2, 4, 8])
+    start_time = time.time()
+    summary(model=model, input_size=(2, 64, 128, 128), batch_size=2, device="cpu")
+    print("--- %s seconds ---" % (time.time() - start_time))
