@@ -50,3 +50,6 @@ ${pwd}/custom_folder/valid/
 3. adapt `configs/custom_DAE.yaml` to point to these 2 files
 4. run `python main.py --base configs/custom_DAE.yaml -t True --gpus 0,1` to
    train on two GPUs. Use `--gpus 0,` (with a trailing comma) to train on a single GPU.
+
+### Generated dataset
+- https://drive.google.com/drive/folders/1o2G57UrSs3v4whlVAVDVAGO-N3iRraEk?usp=sharing
